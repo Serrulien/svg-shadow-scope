@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SVG Shadow DOM Test - ID Scoping</title>
+<style>
+  :root {
+    --bg: #0f0f14;
+    --panel: #1a1a22;
+    --border: #2a2a35;
+    --text: #e5e5ec;
+    --muted: #8a8a96;
+    --accent: #6366f1;
+    --accent-hover: #7c7fff;
+    --danger: #ef4444;
+    --success: #10b981;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    padding: 2rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 1.75rem;
+    margin: 0 0 0.5rem 0;
+    font-weight: 600;
+  }
+  .subtitle {
+    color: var(--muted);
+    margin-bottom: 2rem;
+    line-height: 1.6;
+  }
+  .subtitle code {
+    background: var(--panel);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    font-size: 0.9em;
+    border: 1px solid var(--border);
+  }
+  .controls {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  button {
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--accent);
+    color: white;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  button:hover {
+    background: var(--accent-hover);
+  }
+  button.secondary {
+    background: transparent;
+    color: var(--text);
+  }
+  button.secondary:hover {
+    background: var(--border);
+  }
+  .status {
+    margin-left: auto;
+    align-self: center;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .status strong {
+    color: var(--text);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  @media (max-width: 640px) {
+    .grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+  }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .card-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0;
+  }
+  .badge {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: var(--border);
+    color: var(--muted);
+  }
+  .badge.visible {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--success);
+  }
+  .badge.hidden {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--danger);
+  }
+  .svg-host {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 220px;
+    background: var(--bg);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+  .svg-host.is-hidden::after {
+    content: "display: none";
+    color: var(--muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85rem;
+  }
+  .explanation {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .explanation strong {
+    color: var(--text);
+  }
+  .explanation code {
+    background: var(--bg);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    font-size: 0.9em;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>SVG Shadow DOM &mdash; ID Scoping Test</h1>
+  <p class="subtitle">
+    Two copies of the same SVG (which references an internal <code>&lt;linearGradient&gt;</code> by ID).
+    Each is rendered inside its own shadow root, so the IDs don't collide.
+    Toggle the first one's <code>display</code> and confirm the second keeps its gradient.
+  </p>
+  <div class="controls">
+    <button id="toggleBtn">Toggle SVG #1</button>
+    <button id="modeBtn" class="secondary">Switch to Light DOM (to show the bug)</button>
+    <div class="status">Mode: <strong id="modeLabel">Shadow DOM</strong></div>
+  </div>
+  <div class="grid">
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">SVG #1</h2>
+        <span class="badge visible" id="badge1">visible</span>
+      </div>
+      <div class="svg-host" id="host1"></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">SVG #2</h2>
+        <span class="badge visible">visible</span>
+      </div>
+      <div class="svg-host" id="host2"></div>
+    </div>
+  </div>
+  <div class="explanation">
+    <strong>What's happening:</strong> The SVG contains <code>&lt;linearGradient id="grad1"&gt;</code> and
+    a circle with <code>fill="url(#grad1)"</code>. When the same SVG is injected twice into the light DOM,
+    both elements end up with an ID of <code>grad1</code>, and hiding one can cause the browser to lose
+    the reference for both. Wrapping each SVG in its own shadow root scopes the IDs, so each instance
+    resolves its own <code>#grad1</code>. Use the "Switch to Light DOM" button to see the bug reproduce.
+  </div>
+</div>
+<script>
+  const svgMarkup = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="180" height="180">
+      <defs>
+        <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#f472b6"/>
+          <stop offset="50%" stop-color="#a78bfa"/>
+          <stop offset="100%" stop-color="#60a5fa"/>
+        </linearGradient>
+        <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#fff" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <circle cx="100" cy="100" r="80" fill="url(#grad1)"/>
+      <circle cx="100" cy="100" r="80" fill="url(#glow)"/>
+      <text x="100" y="108" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="24" font-weight="600" fill="white">SVG</text>
+    </svg>
+  `;
+  const toggleBtn = document.getElementById('toggleBtn');
+  const modeBtn = document.getElementById('modeBtn');
+  const modeLabel = document.getElementById('modeLabel');
+  const badge1 = document.getElementById('badge1');
+  let useShadowDom = true;
+  let isHidden = false;
+  function render() {
+    // Clear any previous content (including shadow roots if they exist).
+    // Shadow roots can't be removed, so we replace each host with a fresh
+    // clone. We re-query by ID each time because previous renders left the
+    // old references detached (parentNode === null).
+    ['host1', 'host2'].forEach(id => {
+      const host = document.getElementById(id);
+      const fresh = host.cloneNode(false);
+      host.parentNode.replaceChild(fresh, host);
+    });
+    const newHost1 = document.getElementById('host1');
+    const newHost2 = document.getElementById('host2');
+    if (useShadowDom) {
+      newHost1.attachShadow({ mode: 'open' }).innerHTML = svgMarkup;
+      newHost2.attachShadow({ mode: 'open' }).innerHTML = svgMarkup;
+    } else {
+      newHost1.innerHTML = svgMarkup;
+      newHost2.innerHTML = svgMarkup;
+    }
+    // Re-apply hidden state
+    applyHidden();
+  }
+  function applyHidden() {
+    const h1 = document.getElementById('host1');
+    h1.classList.toggle('is-hidden', isHidden);
+    hideSvg(h1, isHidden);
+    badge1.textContent = isHidden ? 'hidden' : 'visible';
+    badge1.classList.toggle('visible', !isHidden);
+    badge1.classList.toggle('hidden', isHidden);
+  }
+  toggleBtn.addEventListener('click', () => {
+    isHidden = !isHidden;
+    // When hidden with display:none, the card shouldn't actually disappear -
+    // we still want the card container visible with a "display: none" label.
+    // So we toggle display on the svg-host only.
+    const h1 = document.getElementById('host1');
+    if (isHidden) {
+      // Hide the SVG content, keep the card placeholder
+      if (useShadowDom) {
+        // Shadow root - set display:none on the host's shadow content wrapper
+        h1.style.setProperty('--hidden', '1');
+      }
+      h1.classList.add('is-hidden');
+      // Actually hide the SVG by setting display:none on the shadow content
+      hideSvg(h1, true);
+    } else {
+      h1.classList.remove('is-hidden');
+      hideSvg(h1, false);
+    }
+    badge1.textContent = isHidden ? 'hidden' : 'visible';
+    badge1.classList.toggle('visible', !isHidden);
+    badge1.classList.toggle('hidden', isHidden);
+  });
+  function hideSvg(host, hide) {
+    const root = host.shadowRoot || host;
+    const svg = root.querySelector('svg');
+    if (svg) {
+      svg.style.display = hide ? 'none' : '';
+    }
+  }
+  modeBtn.addEventListener('click', () => {
+    useShadowDom = !useShadowDom;
+    modeLabel.textContent = useShadowDom ? 'Shadow DOM' : 'Light DOM (buggy)';
+    modeBtn.textContent = useShadowDom
+      ? 'Switch to Light DOM (to show the bug)'
+      : 'Switch back to Shadow DOM';
+    isHidden = false;
+    render();
+  });
+  render();
+</script>
+</body>
+</html>
